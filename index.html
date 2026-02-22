@@ -55,7 +55,7 @@
         }
 
         h1 {
-            font-size: 2rem;
+            font-size: 2.5rem;
             background: linear-gradient(135deg, var(--accent), var(--accent-2));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -72,6 +72,40 @@
             .main-grid {
                 grid-template-columns: 1fr;
             }
+        }
+
+        /* Language Selector */
+        .lang-selector {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .lang-btn {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .lang-btn:hover {
+            border-color: var(--accent);
+            color: var(--text);
+        }
+
+        .lang-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+            box-shadow: 0 4px 15px var(--accent-glow);
         }
 
         /* Components */
@@ -142,7 +176,6 @@
             color: var(--text);
             font-style: italic;
             display: none;
-            /* Hidden by default */
         }
 
         /* Menu Grid */
@@ -153,7 +186,7 @@
         .category-title {
             font-size: 1.2rem;
             color: var(--text-dim);
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             text-transform: uppercase;
             letter-spacing: 1px;
             border-bottom: 1px solid var(--border);
@@ -163,7 +196,7 @@
         .menu-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 10px;
+            gap: 15px;
         }
 
         .menu-item {
@@ -181,14 +214,16 @@
         }
 
         .emoji {
-            font-size: 2rem;
+            font-size: 2.5rem;
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: 10px;
         }
 
         .price {
             color: var(--accent-2);
             font-weight: bold;
+            margin-top: 5px;
+            display: block;
         }
 
         /* Cart */
@@ -226,17 +261,6 @@
             filter: brightness(1.1);
         }
 
-        .btn-danger {
-            background: var(--danger);
-            width: auto;
-            padding: 5px 10px;
-            font-size: 0.8rem;
-            border-radius: 4px;
-            border: none;
-            color: white;
-            cursor: pointer;
-        }
-
         /* Loader */
         .loader {
             display: inline-block;
@@ -255,6 +279,81 @@
                 transform: rotate(360deg);
             }
         }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background-color: var(--bg-card);
+            margin: 10% auto;
+            padding: 30px;
+            border: 1px solid var(--accent);
+            border-radius: var(--radius);
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 0 50px rgba(108, 92, 231, 0.4);
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .receipt-line {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            border-bottom: 1px dashed var(--border);
+            padding-bottom: 5px;
+        }
+
+        .receipt-total {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent-2);
+        }
+
+        .payment-overlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            border-radius: var(--radius);
+        }
+
+        @keyframes load {
+            to {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 
@@ -263,7 +362,14 @@
     <div class="container">
         <header>
             <h1>AI Voice Ordering</h1>
-            <p style="color:var(--text-dim)">Click mic & speak naturally (e.g., "I want a burger and coke")</p>
+            <p style="color:var(--text-dim); margin-bottom:15px">Speak naturally to place your order</p>
+
+            <!-- Language Selector -->
+            <div class="lang-selector">
+                <button class="lang-btn" id="lang-zh" onclick="setLanguage('zh')">🇨🇳 中文</button>
+                <button class="lang-btn active" id="lang-en" onclick="setLanguage('en')">🇺🇸 English</button>
+                <button class="lang-btn" id="lang-ms" onclick="setLanguage('ms')">🇲🇾 Malay</button>
+            </div>
         </header>
 
         <div class="main-grid">
@@ -287,7 +393,7 @@
                 </div>
 
                 <div class="card">
-                    <h3 style="margin-bottom:15px">Menu</h3>
+                    <h3 style="margin-bottom:15px" id="menuTitle">Menu</h3>
                     <div id="menuContainer">Loading menu...</div>
                 </div>
             </div>
@@ -295,18 +401,47 @@
             <!-- Right: Cart -->
             <div>
                 <div class="card">
-                    <h3 style="margin-bottom:15px">Cart <button onclick="clearCart()"
+                    <h3 style="margin-bottom:15px" id="cartTitle">Cart <button onclick="clearCart()"
                             style="float:right; font-size:0.8rem; background:transparent; border:1px solid var(--border); color:var(--text-dim); cursor:pointer; padding:2px 8px; border-radius:4px;">Clear</button>
                     </h3>
                     <div id="cartItems">
                         <div style="color:var(--text-dim);text-align:center;padding:20px">Empty</div>
                     </div>
                     <div class="total-row">
-                        <span>Total</span>
+                        <span id="totalLabel">Total</span>
                         <span id="totalPrice">¥0</span>
                     </div>
-                    <button class="btn-confirm" onclick="confirmOrder()">Confirm Order</button>
+                    <button class="btn-confirm" id="checkoutBtn" onclick="showReceipt()">Checkout</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Receipt Modal -->
+    <div id="receiptModal" class="modal">
+        <div class="modal-content" style="position: relative;">
+            <div id="paymentOverlay" class="payment-overlay">
+                <div style="font-size:3rem; margin-bottom:20px;">💳</div>
+                <div id="paymentStatus">Processing Payment...</div>
+                <div
+                    style="width:200px; height:4px; background:#333; margin-top:20px; border-radius:2px; overflow:hidden;">
+                    <div style="width:0%; height:100%; background:var(--success); animation: load 2s forwards;"></div>
+                </div>
+            </div>
+
+            <h2 style="text-align:center; margin-bottom:20px; color:var(--text);" id="receiptTitle">🧾 Order Receipt
+            </h2>
+            <div id="receiptItems"></div>
+            <div class="receipt-total">
+                <span id="receiptTotalLabel">Total</span>
+                <span id="receiptTotal">¥0</span>
+            </div>
+            <div style="margin-top:30px; display:flex; gap:10px;">
+                <button onclick="closeReceipt()" id="cancelBtn"
+                    style="flex:1; padding:15px; background:var(--bg-hover); color:var(--text); border:none; border-radius:10px; cursor:pointer;">Cancel</button>
+                <button onclick="startPayment()" id="payBtn"
+                    style="flex:2; padding:15px; background:var(--success); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Pay
+                    Now</button>
             </div>
         </div>
     </div>
@@ -321,12 +456,52 @@
 
         let recognition;
         let isListening = false;
-        let audioContext;
+        let currentCart = { items: [], total: 0 };
+        let currentLang = localStorage.getItem('voice_lang') || 'en';
+        let rawMenuData = null;
+
+        const langMap = {
+            'zh': { code: 'zh-CN', label: '点击说话...', thinking: '思考中...', empty: '购物车是空的', total: '总计', checkout: '去结算', clear: '清空', receipt: '订单小票', pay: '立即付款', cancel: '取消', menu: '菜单', processing: '正在处理付款...', success: '付款成功！' },
+            'en': { code: 'en-US', label: 'Click to speak...', thinking: 'Thinking...', empty: 'Cart is empty', total: 'Total', checkout: 'Checkout', clear: 'Clear', receipt: 'Order Receipt', pay: 'Pay Now', cancel: 'Cancel', menu: 'Menu', processing: 'Processing Payment...', success: 'Payment Successful!' },
+            'ms': { code: 'ms-MY', label: 'Klik untuk bercakap...', thinking: 'Sedang berfikir...', empty: 'Bakul kosong', total: 'Jumlah', checkout: 'Pembeyaran', clear: 'Padam', receipt: 'Resit Pesanan', pay: 'Bayar Sekarang', cancel: 'Batal', menu: 'Menu', processing: 'Memproses Pembayaran...', success: 'Pembayaran Berjaya!' }
+        };
 
         async function init() {
+            setLanguage(currentLang);
             await loadMenu();
             await loadCart();
             initSpeech();
+        }
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            localStorage.setItem('voice_lang', lang);
+
+            // Update UI buttons
+            document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`lang-${lang}`).classList.add('active');
+
+            // Update Labels
+            const strings = langMap[lang];
+            document.getElementById('status').innerText = strings.label;
+            document.getElementById('menuTitle').innerText = strings.menu;
+            document.getElementById('cartTitle').firstChild.textContent = strings.menu + ' ';
+            document.getElementById('totalLabel').innerText = strings.total;
+            document.getElementById('checkoutBtn').innerText = strings.checkout;
+            document.getElementById('receiptTitle').innerText = '🧾 ' + strings.receipt;
+            document.getElementById('receiptTotalLabel').innerText = strings.total;
+            document.getElementById('payBtn').innerText = strings.pay;
+            document.getElementById('cancelBtn').innerText = strings.cancel;
+            document.getElementById('paymentStatus').innerText = strings.processing;
+
+            // Re-init recognition if active
+            if (recognition) {
+                recognition.lang = strings.code;
+            }
+
+            // Re-render menu and cart if data available
+            if (rawMenuData) renderMenu(rawMenuData);
+            if (currentCart) renderCart(currentCart);
         }
 
         // --- API Calls ---
@@ -334,8 +509,8 @@
         async function loadMenu() {
             try {
                 const res = await fetch('/api/menu');
-                const data = await res.json();
-                renderMenu(data);
+                rawMenuData = await res.json();
+                renderMenu(rawMenuData);
             } catch (e) {
                 console.error("Failed to load menu", e);
                 document.getElementById('menuContainer').innerHTML = '<div style="color:red">Error loading menu</div>';
@@ -346,6 +521,7 @@
             try {
                 const res = await fetch(`/api/cart?session_id=${sessionId}`);
                 const data = await res.json();
+                currentCart = data;
                 renderCart(data);
             } catch (e) {
                 console.error("Failed to load cart", e);
@@ -362,15 +538,18 @@
                 });
                 const data = await res.json();
 
-                // Update UI
+                currentCart = data.cart;
                 renderCart(data.cart);
 
-                // Show AI Message
                 const aiMsg = document.getElementById('aiMessage');
                 if (data.ai_message) {
                     aiMsg.innerText = "🤖 " + data.ai_message;
                     aiMsg.style.display = 'block';
-                    speak(data.ai_message); // Speak back response
+                    speak(data.ai_message, data.language);
+                }
+
+                if (data.action === "checkout") {
+                    setTimeout(showReceipt, 1500);
                 }
 
             } catch (e) {
@@ -390,7 +569,7 @@
             loadCart();
         }
 
-        async function confirmOrder() {
+        async function finalConfirmOrder() {
             try {
                 const res = await fetch('/api/confirm-order', {
                     method: 'POST',
@@ -402,13 +581,71 @@
                 if (data.error) {
                     alert(data.error);
                 } else {
-                    alert(data.message_en || data.message_cn);
-                    speak(data.message_en || "Order confirmed!");
-                    renderCart({ items: [], total: 0, item_count: 0 }); // Clear UI
+                    const strings = langMap[currentLang];
+                    speak(strings.success, currentLang);
+                    closeReceipt();
+                    renderCart({ items: [], total: 0, item_count: 0 });
+                    currentCart = { items: [], total: 0 };
+                    alert(strings.success + "\nOrder ID: " + data.order.order_id);
                 }
             } catch (e) {
                 console.error("Order failed", e);
             }
+        }
+
+        // --- Receipt & Payment Logic ---
+
+        function showReceipt() {
+            if (!currentCart.items || currentCart.items.length === 0) {
+                alert(langMap[currentLang].empty);
+                return;
+            }
+
+            const list = document.getElementById('receiptItems');
+            list.innerHTML = currentCart.items.map(item => `
+                <div class="receipt-line">
+                    <span>${getName(item)} x${item.quantity}</span>
+                    <span>¥${item.subtotal}</span>
+                </div>
+            `).join('');
+
+            document.getElementById('receiptTotal').innerText = '¥' + currentCart.total;
+            document.getElementById('receiptModal').style.display = 'block';
+            document.getElementById('paymentOverlay').style.display = 'none';
+
+            const msg = currentLang === 'zh' ? `这是您的订单小票。总共${currentCart.total}元。` :
+                (currentLang === 'ms' ? `Ini resit anda. Jumlahnya adalah ${currentCart.total} ringgit.` :
+                    `Here is your receipt. The total is ${currentCart.total} yuan.`);
+            speak(msg, currentLang);
+        }
+
+        function closeReceipt() {
+            document.getElementById('receiptModal').style.display = 'none';
+        }
+
+        function startPayment() {
+            const overlay = document.getElementById('paymentOverlay');
+            overlay.style.display = 'flex';
+            const strings = langMap[currentLang];
+            speak(strings.processing, currentLang);
+
+            setTimeout(() => {
+                finalConfirmOrder();
+            }, 2000);
+        }
+
+        // --- Helpers ---
+
+        function getName(item) {
+            if (currentLang === 'zh') return item.name_cn;
+            if (currentLang === 'ms') return item.name_ms || item.name_en;
+            return item.name_en;
+        }
+
+        function getCategoryName(cat) {
+            if (currentLang === 'zh') return cat.name_cn;
+            if (currentLang === 'ms') return cat.name_ms;
+            return cat.name_en;
         }
 
         // --- Rendering ---
@@ -418,21 +655,19 @@
             container.innerHTML = '';
 
             for (const [key, category] of Object.entries(menuData)) {
-                // Category Header
                 const catHeader = document.createElement('div');
                 catHeader.className = 'category-title';
-                catHeader.innerText = `${category.name_cn} / ${category.name_en}`;
+                catHeader.innerText = getCategoryName(category);
                 container.appendChild(catHeader);
 
-                // Grid
                 const grid = document.createElement('div');
                 grid.className = 'menu-grid menu-category';
                 grid.innerHTML = category.items.map(item => `
                     <div class="menu-item">
                         <span class="emoji">${item.emoji}</span>
-                        <div>${item.name_cn}</div>
-                        <div style="font-size:0.8rem;color:#888">${item.name_en}</div>
-                        <div class="price">¥${item.price}</div>
+                        <div style="font-weight:600">${getName(item)}</div>
+                        <div style="font-size:0.75rem;color:var(--text-dim)">${item.id.replace('_', ' ')}</div>
+                        <span class="price">¥${item.price}</span>
                     </div>
                 `).join('');
                 container.appendChild(grid);
@@ -444,19 +679,18 @@
             document.getElementById('totalPrice').innerText = '¥' + cartData.total;
 
             if (!cartData.items || cartData.items.length === 0) {
-                container.innerHTML = '<div style="color:var(--text-dim);text-align:center;padding:20px">Cart is empty</div>';
+                container.innerHTML = `<div style="color:var(--text-dim);text-align:center;padding:20px">${langMap[currentLang].empty}</div>`;
                 return;
             }
 
             container.innerHTML = cartData.items.map(item => `
                 <div class="cart-item">
                     <div>
-                        <div>${item.emoji} ${item.name_cn}</div>
-                        <div style="font-size:0.8rem;color:#888">${item.name_en}</div>
+                        <div style="font-weight:500">${item.emoji} ${getName(item)}</div>
                     </div>
                     <div>
-                        <span style="margin-right:10px">x${item.quantity}</span>
-                        <span style="color:var(--accent-2)">¥${item.subtotal}</span>
+                        <span style="margin-right:10px; color:var(--text-dim)">x${item.quantity}</span>
+                        <span style="color:var(--accent-2); font-weight:600">¥${item.subtotal}</span>
                     </div>
                 </div>
             `).join('');
@@ -472,20 +706,19 @@
             }
             recognition = new SpeechRecognition();
             recognition.continuous = false;
-            recognition.lang = 'zh-CN'; // Default to Chinese, auto-detects well usually
+            recognition.lang = langMap[currentLang].code;
 
             recognition.onstart = () => {
                 isListening = true;
                 document.getElementById('micBtn').classList.add('listening');
-                document.getElementById('status').innerText = 'Listening...';
+                document.getElementById('status').innerText = langMap[currentLang].label;
             };
 
             recognition.onend = () => {
                 isListening = false;
                 document.getElementById('micBtn').classList.remove('listening');
-                // Don't reset status if loading
                 if (document.getElementById('loader').style.display === 'none') {
-                    document.getElementById('status').innerText = 'Click to speak...';
+                    document.getElementById('status').innerText = langMap[currentLang].label;
                 }
             };
 
@@ -513,15 +746,14 @@
 
         function showLoader(show) {
             document.getElementById('loader').style.display = show ? 'inline-block' : 'none';
-            document.getElementById('status').innerText = show ? 'Thinking...' : 'Click to speak...';
+            document.getElementById('status').innerText = show ? langMap[currentLang].thinking : langMap[currentLang].label;
         }
 
-        function speak(text) {
+        function speak(text, lang) {
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
                 const u = new SpeechSynthesisUtterance(text);
-                // Simple language detection
-                u.lang = /[\u4e00-\u9fff]/.test(text) ? 'zh-CN' : 'en-US';
+                u.lang = langMap[lang || currentLang].code;
                 window.speechSynthesis.speak(u);
             }
         }
