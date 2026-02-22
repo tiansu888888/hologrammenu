@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Voice Order | Intelligent Ordering System</title>
+    <!-- Use Google Fonts for better typography -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        /* Base Reset & Variables */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a28;
+            --bg-hover: #22223a;
+            --accent: #6c5ce7;
+            --accent-glow: rgba(108, 92, 231, 0.3);
+            --accent-2: #00cec9;
+            --text: #e8e8f0;
+            --text-dim: #8888a8;
+            --success: #00b894;
+            --danger: #e17055;
+            --border: rgba(255, 255, 255, 0.06);
+            --radius: 16px;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans SC', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Layout */
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2rem;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+        }
+
+        @media (max-width: 800px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Components */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+        }
+
+        /* Voice Mic */
+        .voice-box {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .mic-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(108, 92, 231, 0.1);
+            border: 2px solid var(--accent);
+            color: var(--accent);
+            font-size: 2rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 10px;
+        }
+
+        .mic-btn:hover {
+            background: rgba(108, 92, 231, 0.2);
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        .mic-btn.listening {
+            background: rgba(225, 112, 85, 0.1);
+            border-color: var(--danger);
+            color: var(--danger);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(225, 112, 85, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 15px transparent;
+            }
+        }
+
+        .transcript {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 8px;
+            min-height: 40px;
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+
+        .ai-message {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(108, 92, 231, 0.1);
+            border-left: 3px solid var(--accent);
+            border-radius: 4px;
+            color: var(--text);
+            font-style: italic;
+            display: none;
+            /* Hidden by default */
+        }
+
+        /* Menu Grid */
+        .menu-category {
+            margin-bottom: 20px;
+        }
+
+        .category-title {
+            font-size: 1.2rem;
+            color: var(--text-dim);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 5px;
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 10px;
+        }
+
+        .menu-item {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .menu-item:hover {
+            transform: translateY(-3px);
+            border-color: var(--accent);
+        }
+
+        .emoji {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .price {
+            color: var(--accent-2);
+            font-weight: bold;
+        }
+
+        /* Cart */
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .total-row {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--accent-2);
+        }
+
+        .btn-confirm {
+            width: 100%;
+            padding: 15px;
+            background: var(--success);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            margin-top: 15px;
+            cursor: pointer;
+        }
+
+        .btn-confirm:hover {
+            filter: brightness(1.1);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            width: auto;
+            padding: 5px 10px;
+            font-size: 0.8rem;
+            border-radius: 4px;
+            border: none;
+            color: white;
+            cursor: pointer;
+        }
+
+        /* Loader */
+        .loader {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 10px;
+            display: none;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <header>
+            <h1>AI Voice Ordering</h1>
+            <p style="color:var(--text-dim)">Click mic & speak naturally (e.g., "I want a burger and coke")</p>
+        </header>
+
+        <div class="main-grid">
+            <!-- Left: Voice & Menu -->
+            <div>
+                <div class="card voice-box">
+                    <button class="mic-btn" id="micBtn" onclick="toggleMic()">🎤</button>
+                    <div id="status">Click to speak...</div>
+                    <div class="loader" id="loader"></div>
+                    <div class="transcript" id="transcript">...</div>
+                    <div class="ai-message" id="aiMessage"></div>
+
+                    <!-- Fallback Input -->
+                    <div style="margin-top:15px; display:flex; gap:10px; justify-content:center;">
+                        <input type="text" id="manualInput" placeholder="Or type here..."
+                            onkeypress="if(event.key==='Enter') manualSubmit()"
+                            style="background:var(--bg-secondary); border:1px solid var(--border); color:white; padding:10px; border-radius:8px; width:60%;">
+                        <button onclick="manualSubmit()"
+                            style="background:var(--accent); border:none; color:white; padding:10px 20px; border-radius:8px; cursor:pointer;">Send</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 style="margin-bottom:15px">Menu</h3>
+                    <div id="menuContainer">Loading menu...</div>
+                </div>
+            </div>
+
+            <!-- Right: Cart -->
+            <div>
+                <div class="card">
+                    <h3 style="margin-bottom:15px">Cart <button onclick="clearCart()"
+                            style="float:right; font-size:0.8rem; background:transparent; border:1px solid var(--border); color:var(--text-dim); cursor:pointer; padding:2px 8px; border-radius:4px;">Clear</button>
+                    </h3>
+                    <div id="cartItems">
+                        <div style="color:var(--text-dim);text-align:center;padding:20px">Empty</div>
+                    </div>
+                    <div class="total-row">
+                        <span>Total</span>
+                        <span id="totalPrice">¥0</span>
+                    </div>
+                    <button class="btn-confirm" onclick="confirmOrder()">Confirm Order</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Session ID for cart persistence
+        let sessionId = localStorage.getItem('voice_order_session');
+        if (!sessionId) {
+            sessionId = 'sess_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('voice_order_session', sessionId);
+        }
+
+        let recognition;
+        let isListening = false;
+        let audioContext;
+
+        async function init() {
+            await loadMenu();
+            await loadCart();
+            initSpeech();
+        }
+
+        // --- API Calls ---
+
+        async function loadMenu() {
+            try {
+                const res = await fetch('/api/menu');
+                const data = await res.json();
+                renderMenu(data);
+            } catch (e) {
+                console.error("Failed to load menu", e);
+                document.getElementById('menuContainer').innerHTML = '<div style="color:red">Error loading menu</div>';
+            }
+        }
+
+        async function loadCart() {
+            try {
+                const res = await fetch(`/api/cart?session_id=${sessionId}`);
+                const data = await res.json();
+                renderCart(data);
+            } catch (e) {
+                console.error("Failed to load cart", e);
+            }
+        }
+
+        async function sendVoice(text) {
+            showLoader(true);
+            try {
+                const res = await fetch('/api/process-voice', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text, session_id: sessionId })
+                });
+                const data = await res.json();
+
+                // Update UI
+                renderCart(data.cart);
+
+                // Show AI Message
+                const aiMsg = document.getElementById('aiMessage');
+                if (data.ai_message) {
+                    aiMsg.innerText = "🤖 " + data.ai_message;
+                    aiMsg.style.display = 'block';
+                    speak(data.ai_message); // Speak back response
+                }
+
+            } catch (e) {
+                console.error("AI Error", e);
+                alert("Error processing request");
+            } finally {
+                showLoader(false);
+            }
+        }
+
+        async function clearCart() {
+            await fetch('/api/cart/clear', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: sessionId })
+            });
+            loadCart();
+        }
+
+        async function confirmOrder() {
+            try {
+                const res = await fetch('/api/confirm-order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: sessionId })
+                });
+                const data = await res.json();
+
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    alert(data.message_en || data.message_cn);
+                    speak(data.message_en || "Order confirmed!");
+                    renderCart({ items: [], total: 0, item_count: 0 }); // Clear UI
+                }
+            } catch (e) {
+                console.error("Order failed", e);
+            }
+        }
+
+        // --- Rendering ---
+
+        function renderMenu(menuData) {
+            const container = document.getElementById('menuContainer');
+            container.innerHTML = '';
+
+            for (const [key, category] of Object.entries(menuData)) {
+                // Category Header
+                const catHeader = document.createElement('div');
+                catHeader.className = 'category-title';
+                catHeader.innerText = `${category.name_cn} / ${category.name_en}`;
+                container.appendChild(catHeader);
+
+                // Grid
+                const grid = document.createElement('div');
+                grid.className = 'menu-grid menu-category';
+                grid.innerHTML = category.items.map(item => `
+                    <div class="menu-item">
+                        <span class="emoji">${item.emoji}</span>
+                        <div>${item.name_cn}</div>
+                        <div style="font-size:0.8rem;color:#888">${item.name_en}</div>
+                        <div class="price">¥${item.price}</div>
+                    </div>
+                `).join('');
+                container.appendChild(grid);
+            }
+        }
+
+        function renderCart(cartData) {
+            const container = document.getElementById('cartItems');
+            document.getElementById('totalPrice').innerText = '¥' + cartData.total;
+
+            if (!cartData.items || cartData.items.length === 0) {
+                container.innerHTML = '<div style="color:var(--text-dim);text-align:center;padding:20px">Cart is empty</div>';
+                return;
+            }
+
+            container.innerHTML = cartData.items.map(item => `
+                <div class="cart-item">
+                    <div>
+                        <div>${item.emoji} ${item.name_cn}</div>
+                        <div style="font-size:0.8rem;color:#888">${item.name_en}</div>
+                    </div>
+                    <div>
+                        <span style="margin-right:10px">x${item.quantity}</span>
+                        <span style="color:var(--accent-2)">¥${item.subtotal}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // --- Speech & UI logic ---
+
+        function initSpeech() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                document.getElementById('status').innerText = 'Browser does not support Speech API';
+                return;
+            }
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.lang = 'zh-CN'; // Default to Chinese, auto-detects well usually
+
+            recognition.onstart = () => {
+                isListening = true;
+                document.getElementById('micBtn').classList.add('listening');
+                document.getElementById('status').innerText = 'Listening...';
+            };
+
+            recognition.onend = () => {
+                isListening = false;
+                document.getElementById('micBtn').classList.remove('listening');
+                // Don't reset status if loading
+                if (document.getElementById('loader').style.display === 'none') {
+                    document.getElementById('status').innerText = 'Click to speak...';
+                }
+            };
+
+            recognition.onresult = (event) => {
+                const text = event.results[0][0].transcript;
+                document.getElementById('transcript').innerText = `"${text}"`;
+                sendVoice(text);
+            };
+        }
+
+        function toggleMic() {
+            if (isListening) recognition.stop();
+            else recognition.start();
+        }
+
+        function manualSubmit() {
+            const input = document.getElementById('manualInput');
+            const text = input.value.trim();
+            if (text) {
+                document.getElementById('transcript').innerText = `"${text}"`;
+                sendVoice(text);
+                input.value = '';
+            }
+        }
+
+        function showLoader(show) {
+            document.getElementById('loader').style.display = show ? 'inline-block' : 'none';
+            document.getElementById('status').innerText = show ? 'Thinking...' : 'Click to speak...';
+        }
+
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(text);
+                // Simple language detection
+                u.lang = /[\u4e00-\u9fff]/.test(text) ? 'zh-CN' : 'en-US';
+                window.speechSynthesis.speak(u);
+            }
+        }
+
+        // Start
+        init();
+
+    </script>
+</body>
+
+</html>
